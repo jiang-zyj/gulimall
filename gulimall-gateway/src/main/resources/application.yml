@@ -1,0 +1,31 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+
+        # 商品路由
+        - id: product_route
+          uri: lb://gulimall-product
+          predicates:
+            - Path=/api/product/**
+          filters:
+            - RewritePath=/api/(?<segment>.*),/$\{segment}
+
+        # 第三方路由
+        - id: third_party_route
+          uri: lb://gulimall-third-party
+          predicates:
+            - Path=/api/thirdparty/**
+          filters:
+            - RewritePath=/api/thirdparty/(?<segment>.*),/$\{segment}
+
+        # renren-fast路由
+        - id: admin_route
+          uri: lb://renren-fast
+          predicates:
+            # 路径断言
+            - Path=/api/**
+          filters:
+            # 路径重写
+            - RewritePath=/api/(?<segment>.*),/renren-fast/$\{segment}
+## 前端项目，必须带有 /api 的请求
