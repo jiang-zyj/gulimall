@@ -26,7 +26,19 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  *      2. 在给需要开启校验功能的Controller上标注 @Valid，以此来开启校验功能
  *          效果：校验错误以后会有默认的响应
  *      3. 给校验的bean后紧跟一个BindingResult，就可以获取到校验的结果
- *
+ *      4. 分组校验（多场景的复杂校验）
+ *          1. 给校验注解标注什么时候需要进行校验
+ *          @NotBlank(message = "品牌名必须提交", groups = {AddGroup.class, UpdateGroup.class})
+ *          2. 给Controller中需要对对象校验的方法加上 @Validated(value = {XXXGroup.class})
+ *          3. 默认没有指定分组的校验注解(比如@NotBlank)，在分组校验情况下 (@Validated(value = {XXXGroup.class})) 不生效，只能在 @Valid 注解的情况下生效
+ *      5. 自定义校验（示例：BrandEntity中的showStatus属性）
+ *          1. 编写一个自定义的校验注解
+ *          2. 编写一个自定义的校验器 ConstraintValidator
+ *          3. 关联自定义的校验器和自定义的校验注解
+ *             @Documented
+             * @Constraint(validatedBy = {ListValueConstraintValidator.class 【可以指定多个不同的校验器，适配不同类型的校验】})
+             * @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
+             * @Retention(RUNTIME)
  *  4. 统一的异常处理
  *  @ControllerAdvice
  *      1.

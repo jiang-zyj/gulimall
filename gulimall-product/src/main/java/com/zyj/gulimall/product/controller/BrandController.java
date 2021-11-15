@@ -6,8 +6,12 @@ import java.util.Map;
 
 import com.zyj.common.utils.PageUtils;
 import com.zyj.common.utils.R;
+import com.zyj.common.valid.AddGroup;
+import com.zyj.common.valid.UpdateGroup;
+import com.zyj.common.valid.UpdateStatusGroup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -59,7 +63,7 @@ public class BrandController {
      * @Valid: 告诉SpringMVC这个数据需要校验
      */
     @RequestMapping("/save")
-    public R save(@Valid @RequestBody BrandEntity brand/*, BindingResult result*/){
+    public R save(@Validated(value = {AddGroup.class}) @RequestBody BrandEntity brand/*, BindingResult result*/){
         //if (result.hasErrors()) {
         //    Map<String, String> map = new HashMap<>();
         //    // 1. 获取校验的错误结果
@@ -80,9 +84,20 @@ public class BrandController {
      * 修改
      */
     @RequestMapping("/update")
-    public R update(@RequestBody BrandEntity brand){
+    public R update(@Validated(value = {UpdateGroup.class}) @RequestBody BrandEntity brand){
 
-		brandService.updateById(brand);
+		brandService.updateDetail(brand);
+
+        return R.ok();
+    }
+
+    /**
+     * 修改状态
+     */
+    @RequestMapping("/update/status")
+    public R updateStatus(@Validated(value = {UpdateStatusGroup.class}) @RequestBody BrandEntity brand){
+
+        brandService.updateById(brand);
 
         return R.ok();
     }

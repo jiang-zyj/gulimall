@@ -2,8 +2,12 @@ package com.zyj.gulimall.product.service.impl;
 
 import com.zyj.common.utils.PageUtils;
 import com.zyj.common.utils.Query;
+import com.zyj.gulimall.product.service.CategoryBrandRelationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -15,10 +19,15 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zyj.gulimall.product.dao.CategoryDao;
 import com.zyj.gulimall.product.entity.CategoryEntity;
 import com.zyj.gulimall.product.service.CategoryService;
+import org.springframework.transaction.annotation.Transactional;
+import sun.rmi.runtime.Log;
 
 
 @Service("categoryService")
 public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity> implements CategoryService {
+
+    @Autowired
+    private CategoryBrandRelationService categoryBrandRelationService;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -32,6 +41,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
     /**
      * 递归查找所有菜单的子菜单
+     *
      * @return
      */
     @Override
@@ -65,8 +75,42 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         baseMapper.deleteBatchIds(asList);
     }
 
+    // [2, 25, 225]
+    @Override
+    public Long[] findCatelogPath(Long catelogId) {
+        List<Long> paths = new ArrayList<>();
+
+        List<Long> parentPath = findParentPath(catelogId, paths);
+
+        Collections.reverse(parentPath);
+        return parentPath.toArray(new Long[parentPath.size()]);
+    }
+
+    /**
+     * 级联更新所有关联的数据
+     * @param category
+     */
+    @Transactional
+    @Override
+    public void updateCascade(CategoryEntity category) {
+        this.updateById(category);
+        categoryBrandRelationService.updateCategory(category.getCatId(), category.getName());
+    }
+
+    private List<Long> findParentPath(Long catelogId, List<Long> paths) {
+        // 收集当前的节点路径
+        paths.add(catelogId);
+        CategoryEntity byId = this.getById(catelogId);
+        if (byId.getParentCid() != 0) {
+            // 递归查询父节点
+            findParentPath(byId.getParentCid(), paths);
+        }
+        return paths;
+    }
+
     /**
      * 获取当前菜单的所有子菜单
+     *
      * @param root
      * @param all
      * @return
