@@ -18,5 +18,7 @@ public interface AttrGroupService extends IService<AttrGroupEntity> {
     PageUtils queryPage(Map<String, Object> params);
 
     PageUtils queryPage(Map<String, Object> params, long catelogId);
+
+    PageUtils getNoRelation(Map<String, Object> params, Long attrgroupId);
 }
 

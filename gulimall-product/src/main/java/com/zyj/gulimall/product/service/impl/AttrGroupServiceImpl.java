@@ -1,9 +1,21 @@
 package com.zyj.gulimall.product.service.impl;
 
+import com.zyj.common.constant.ProductConstant;
 import com.zyj.common.utils.PageUtils;
 import com.zyj.common.utils.Query;
+import com.zyj.gulimall.product.dao.AttrAttrgroupRelationDao;
+import com.zyj.gulimall.product.dao.AttrDao;
+import com.zyj.gulimall.product.entity.AttrAttrgroupRelationEntity;
+import com.zyj.gulimall.product.entity.AttrEntity;
+import com.zyj.gulimall.product.service.AttrAttrgroupRelationService;
+import com.zyj.gulimall.product.service.AttrService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -17,6 +29,14 @@ import org.springframework.util.StringUtils;
 @Service("attrGroupService")
 public class AttrGroupServiceImpl extends ServiceImpl<AttrGroupDao, AttrGroupEntity> implements AttrGroupService {
 
+    @Autowired
+    private AttrAttrgroupRelationDao relationDao;
+
+    @Autowired
+    private AttrDao attrDao;
+
+    @Autowired
+    private AttrService attrService;
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
         IPage<AttrGroupEntity> page = this.page(
@@ -56,6 +76,50 @@ public class AttrGroupServiceImpl extends ServiceImpl<AttrGroupDao, AttrGroupEnt
             return new PageUtils(page);
         }
 
+    }
+
+    /**
+     * 获取当前分组没有关联的属性
+     * @param params
+     * @param attrgroupId
+     * @return
+     */
+    @Override
+    public PageUtils getNoRelation(Map<String, Object> params, Long attrgroupId) {
+        // 1. 当前分组只能关联自己所属分类下的所有属性
+        // 1.1 首先获取 AttrGroupEntity，通过AttrGroupEntity来获取分类id
+        AttrGroupEntity attrGroupEntity = this.baseMapper.selectById(attrgroupId);
+        Long catelogId = attrGroupEntity.getCatelogId();
+
+        // 2. 当前分组只能关联其他分组没有关联的属性
+        // 2.1 查询出当前分类下的其他分组
+        List<AttrGroupEntity> otherAttrGroupEntities = this.baseMapper.selectList(new QueryWrapper<AttrGroupEntity>().eq("catelog_id", catelogId));
+
+        // 2.2 再找到这些分组关联的属性
+        List<Long> attrGroupIds = otherAttrGroupEntities.stream().map(item -> {
+            return item.getAttrGroupId();
+        }).collect(Collectors.toList());
+        List<AttrAttrgroupRelationEntity> entities = relationDao.selectList(new QueryWrapper<AttrAttrgroupRelationEntity>().in("attr_group_id", attrGroupIds));
+        List<Long> attrIds = entities.stream().map(item -> {
+            return item.getAttrId();
+        }).collect(Collectors.toList());
+        // 2.3 从当前分类的所有属性中移除这些属性
+        QueryWrapper<AttrEntity> queryWrapper = new QueryWrapper<AttrEntity>().eq("catelog_id", catelogId).eq("attr_type", ProductConstant.AttrEnum.ATTR_TYPE_BASE.getCode());
+        if (attrIds != null && attrIds.size() > 0) {
+            queryWrapper.notIn("attr_id", attrIds);
+        }
+        // 模糊查询
+        String key = (String) params.get("key");
+        if (!StringUtils.isEmpty(key)) {
+            queryWrapper.and((wrapper) -> {
+                wrapper.eq("attr_id", key).or().like("attr_name", key);
+            });
+        }
+        IPage<AttrEntity> page = attrService.page(new Query<AttrEntity>().getPage(params), queryWrapper);
+
+        PageUtils pageUtils = new PageUtils(page);
+
+        return pageUtils;
     }
 
 }

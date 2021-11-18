@@ -5,6 +5,7 @@ import java.util.Map;
 
 import com.zyj.common.utils.PageUtils;
 import com.zyj.common.utils.R;
+import com.zyj.gulimall.product.vo.AttrRespVo;
 import com.zyj.gulimall.product.vo.AttrVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -27,11 +28,13 @@ public class AttrController {
     private AttrService attrService;
 
 
-
-    @GetMapping("/base/list/{categoryId}")
+    // product/attr/sale/list/0
+    // product/attr/base/list/0
+    @GetMapping("/{attrType}/list/{categoryId}")
     public R baseAttrList(@RequestParam Map<String, Object> params,
-                          @PathVariable("categoryId") Long categoryId) {
-        PageUtils page = attrService.queryBaseAttrPage(params, categoryId);
+                          @PathVariable("categoryId") Long categoryId,
+                          @PathVariable("attrType") String type) {
+        PageUtils page = attrService.queryBaseAttrPage(params, categoryId, type);
 
         return R.ok().put("page", page);
     }
@@ -52,9 +55,10 @@ public class AttrController {
      */
     @RequestMapping("/info/{attrId}")
     public R info(@PathVariable("attrId") Long attrId) {
-        AttrEntity attr = attrService.getById(attrId);
+        //AttrEntity attr = attrService.getById(attrId);
 
-        return R.ok().put("attr", attr);
+        AttrRespVo respVo = attrService.getAttrInfo(attrId);
+        return R.ok().put("attr", respVo);
     }
 
     /**
@@ -71,8 +75,8 @@ public class AttrController {
      * 修改
      */
     @RequestMapping("/update")
-    public R update(@RequestBody AttrEntity attr) {
-        attrService.updateById(attr);
+    public R update(@RequestBody AttrVo attr) {
+        attrService.updateAttr(attr);
 
         return R.ok();
     }

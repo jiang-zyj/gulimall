@@ -3,10 +3,13 @@ package com.zyj.gulimall.product.controller;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.zyj.common.utils.PageUtils;
 import com.zyj.common.utils.R;
+import com.zyj.gulimall.product.entity.BrandEntity;
+import com.zyj.gulimall.product.vo.BrandVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,7 +43,27 @@ public class CategoryBrandRelationController {
         return R.ok().put("data", data);
     }
 
+    /**
+     * 获取分类关联的所有品牌
+     * /product/categorybrandrelation/brands/list
+     *
+     * 1. Controller：处理请求，接收和校验数据
+     * 2. Service：接收Controller传来的数据，进行业务处理
+     * 3. Controller接收Service处理完的数据，封装为页面指定的vo
+     */
+    @GetMapping("/brands/list")
+    public R relationBrandsList(@RequestParam(value = "catId", required = true) Long catId) {
+        List<BrandEntity> brandEntities = categoryBrandRelationService.getBrandsByCatId(catId);
 
+        // 由于页面只需要 brandId 和 brandName，故此封装
+        List<BrandVo> collect = brandEntities.stream().map((brandEntity) -> {
+            BrandVo brandVo = new BrandVo();
+            brandVo.setBrandId(brandEntity.getBrandId());
+            brandVo.setBrandName(brandEntity.getName());
+            return brandVo;
+        }).collect(Collectors.toList());
+        return R.ok().put("data", collect);
+    }
 
     /**
      * 列表

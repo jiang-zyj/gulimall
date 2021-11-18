@@ -6,7 +6,7 @@ package com.zyj.common.exception;
  * @author: YaJun
  * @Date: 2021 - 11 - 11 - 20:47
  * @Package: com.zyj.common.exception
- * @Description:
+ * @Description: 异常信息
  */
 public enum BizCodeEnum {
 
