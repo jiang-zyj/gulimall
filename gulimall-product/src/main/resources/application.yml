@@ -13,6 +13,9 @@ spring:
         secret-key: nbtDhE2fRiORNvzz8QdRhmMbl699Nf
         oss:
           endpoint: oss-cn-shenzhen.aliyuncs.com
+  # 使关于时间的json数据都转换为标准格式
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
 
 mybatis-plus:
   mapper-locations: classpath:/mapper/**/*.xml
