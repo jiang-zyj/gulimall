@@ -1,15 +1,21 @@
 package com.zyj.gulimall.product.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zyj.common.constant.ProductConstant;
 import com.zyj.common.utils.PageUtils;
 import com.zyj.common.utils.Query;
 import com.zyj.gulimall.product.dao.AttrAttrgroupRelationDao;
+import com.zyj.gulimall.product.dao.AttrDao;
 import com.zyj.gulimall.product.dao.AttrGroupDao;
 import com.zyj.gulimall.product.dao.CategoryDao;
 import com.zyj.gulimall.product.entity.AttrAttrgroupRelationEntity;
+import com.zyj.gulimall.product.entity.AttrEntity;
 import com.zyj.gulimall.product.entity.AttrGroupEntity;
 import com.zyj.gulimall.product.entity.CategoryEntity;
+import com.zyj.gulimall.product.service.AttrService;
 import com.zyj.gulimall.product.service.CategoryService;
 import com.zyj.gulimall.product.vo.AttrGroupRelationVo;
 import com.zyj.gulimall.product.vo.AttrRespVo;
@@ -17,22 +23,14 @@ import com.zyj.gulimall.product.vo.AttrVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-
-import com.zyj.gulimall.product.dao.AttrDao;
-import com.zyj.gulimall.product.entity.AttrEntity;
-import com.zyj.gulimall.product.service.AttrService;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 
 @Service("attrService")
@@ -217,6 +215,11 @@ public class AttrServiceImpl extends ServiceImpl<AttrDao, AttrEntity> implements
 
         relationDao.deleteBatchRelation(entities);
 
+    }
+
+    @Override
+    public List<Long> selectSearchAttrIds(List<Long> attrIds) {
+        return baseMapper.selectSearchAttrIds(attrIds);
     }
 
 }

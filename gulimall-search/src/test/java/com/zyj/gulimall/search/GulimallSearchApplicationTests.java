@@ -30,6 +30,49 @@ public class GulimallSearchApplicationTests {
     @Autowired
     private RestHighLevelClient client;
 
+
+    /**
+     * (1). 浪费空间：{
+     *          skuId: 1
+     *          spuId: 11
+     *          skuTitle: 华为xxx
+     *          price: 998
+     *          attrs: [
+     *              {尺寸: 5寸},
+     *              {CPU: 高通985},
+     *              {分辨率: 全高清}
+     *          ]
+     *          ...
+     *      }
+     * 这种方法会有冗余
+     * 100万 * 20 = 1000000 * 2KB = 2000MB = 2G, 一根内存条搞定，就算是20G，那也可以接受
+     *
+     * (2). 节省空间
+     *      sku索引 {
+     *          skuId: 1
+     *          spuId: 11
+     *          ...
+     *      }
+     *
+     *      attr索引：{
+     *          spuId: 11,
+     *          attrs: [
+     *              {尺寸: 5寸},
+     *              {CPU: 高通985},
+     *              {分辨率: 全高清}
+     *          ]
+     *      }
+     *  搜索 小米：粮食、手机、电器。
+     *  10000个，4000个spu
+     *  分布：4000个spu对应的所有可能属性：
+     *  esClient：spuId：[4000个spuId] 4000 * 8 = 32000byte = 32KB
+     *  一个请求需要32KB
+     *  如果在百万并发情况下：
+     *  32KB * 10000 = 32000MB = 32GB
+     *  一个请求就要32GB，那肯定网络都堵死了。
+     *  所以，最后我们使用空间换时间，ES消耗的内存大点没事，不能丢失客服
+     */
+
     @ToString
     @Data
     static class Account {
