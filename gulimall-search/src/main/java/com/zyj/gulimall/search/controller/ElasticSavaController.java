@@ -19,7 +19,7 @@ import java.util.List;
  * @ClassName ElasticSavaController
  * @author: YaJun
  * @Date: 2021 - 11 - 29 - 22:59
- * @Package: com.zyj.gulimall.search.controller
+ * @Package: com.zyj.gulimall.search.app
  * @Description:
  */
 @Slf4j

@@ -25,7 +25,7 @@ import java.util.Map;
  * @ClassName OssController
  * @author: YaJun
  * @Date: 2021 - 11 - 09 - 22:04
- * @Package: com.zyj.gulimall.gulimall.thirdparty.controller
+ * @Package: com.zyj.gulimall.gulimall.thirdparty.app
  * @Description:
  */
 @RestController

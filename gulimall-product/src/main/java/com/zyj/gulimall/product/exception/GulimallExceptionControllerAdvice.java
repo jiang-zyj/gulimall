@@ -24,7 +24,7 @@ import java.util.Map;
 @Slf4j
 //@ResponseBody
 //@ControllerAdvice
-@RestControllerAdvice(basePackages = "com.zyj.gulimall.product.controller")
+@RestControllerAdvice(basePackages = "com.zyj.gulimall.product.app")
 public class GulimallExceptionControllerAdvice {
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
