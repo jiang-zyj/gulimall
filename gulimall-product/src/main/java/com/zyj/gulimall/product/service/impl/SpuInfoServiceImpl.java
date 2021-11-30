@@ -1,5 +1,6 @@
 package com.zyj.gulimall.product.service.impl;
 
+import com.alibaba.fastjson.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -284,9 +285,13 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
         // TODO 1. 发送远程调用，库存服务查询是否有库存
         Map<Long, Boolean> stockMap = null;
         try {
-            R<List<SkuHasStockVo>> skusHasStock = wareFeignService.getSkusHasStock(skuIdList);
+            R r = wareFeignService.getSkusHasStock(skuIdList);
 
-            stockMap = skusHasStock.getData().stream().collect(Collectors.toMap(SkuHasStockVo::getSkuId, SkuHasStockVo::getHasStock));
+            // 生成需要转换的类型的TypeReference
+            TypeReference<List<SkuHasStockVo>> typeReference = new TypeReference<List<SkuHasStockVo>>() {
+            };
+
+            stockMap = r.getData(typeReference).stream().collect(Collectors.toMap(SkuHasStockVo::getSkuId, SkuHasStockVo::getHasStock));
         } catch (Exception e) {
             log.error("库存服务查询异常: 原因:{}", e);
         }
@@ -336,10 +341,23 @@ public class SpuInfoServiceImpl extends ServiceImpl<SpuInfoDao, SpuInfoEntity> i
             /**
              * Feign的调用流程
              * 1. 构造请求数据,将对象转为json;
-             *
+             *      RequestTemplate template = builderTemplateFromArgs.create(argv);
              * 2. 发送请求进行执行(执行成功会解码响应数据)
-             *
+             *      executeAndDecode(template)
              * 3. 执行请求会有重试机制
+             *      Retryer retryer = this.retryer.clone();
+             *      while(true) {   // 不抛异常则一直重试，但是一般会有限制次数，默认5次
+             *          try {
+             *              executeAndDecode(template); // 没异常，执行请求
+             *          } catch {
+             *              try{
+             *                  retryer.continueOrPropagate(e); // 进行重试
+             *              } catch {
+             *                  throw ex;   // 如果有异常，则抛出异常
+             *              }
+             *              continue;       // 继续重试
+             *          }
+             *      }
              */
         }
 

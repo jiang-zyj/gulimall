@@ -40,7 +40,7 @@ public class ElasticSavaController {
             log.error("ElasticSavaController商品上架发生错误: {}", e);
             return R.error(BizCodeEnum.PRODUCT_UP_EXCEPTION.getCode(), BizCodeEnum.PRODUCT_UP_EXCEPTION.getMsg());
         }
-        if (b) {
+        if (!b) {
             return R.ok();
         } else {
             return R.error(BizCodeEnum.PRODUCT_UP_EXCEPTION.getCode(), BizCodeEnum.PRODUCT_UP_EXCEPTION.getMsg());
