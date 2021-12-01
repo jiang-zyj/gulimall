@@ -2,7 +2,6 @@ spring:
   cloud:
     gateway:
       routes:
-
         # 商品路由
         - id: product_route
           uri: lb://gulimall-product
@@ -44,4 +43,10 @@ spring:
           filters:
             # 路径重写
             - RewritePath=/api/(?<segment>.*),/renren-fast/$\{segment}
+
+        # nginx反向代理路由到网关
+        - id: gulimall_host_route
+          uri: lb://gulimall-product
+          predicates:
+            - Host=**.gulimall.com
 ## 前端项目，必须带有 /api 的请求
