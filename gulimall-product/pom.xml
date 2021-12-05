@@ -84,6 +84,14 @@
             <artifactId>jedis</artifactId>
         </dependency>
 
+        <!-- 以后使用redission作为所有分布式锁，分布式对象等框架 -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.13.2</version>
+        </dependency>
+
+
     </dependencies>
 
     <dependencyManagement>

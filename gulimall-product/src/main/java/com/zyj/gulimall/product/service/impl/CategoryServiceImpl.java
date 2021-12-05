@@ -14,14 +14,13 @@ import com.zyj.gulimall.product.service.CategoryService;
 import com.zyj.gulimall.product.vo.Catelog2Vo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -93,6 +92,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
     /**
      * 级联更新所有关联的数据
+     *
      * @param category
      */
     @Transactional
@@ -126,34 +126,95 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
     public Map<String, List<Catelog2Vo>> getCatelogJson() {
         // 给缓存中方json字符串，拿出来的json字符串还要转为相应的实体类 【序列化与反序列化】
 
+        /**
+         * 1. 空结果缓存：解决缓存穿透
+         * 2. 设置过期时间（随机值时间）：解决缓存雪崩
+         * 3. 加锁：解决缓存击穿
+         */
+
         // 1. 加入缓存逻辑，缓存中的数据为json字符串
         // JSON跨语言，跨平台兼容
         String catelogJson = redisTemplate.opsForValue().get("catelogJson");
         if (StringUtils.isEmpty(catelogJson)) {
             // 2. 缓存中没有，查询数据库
-            Map<String, List<Catelog2Vo>> catelogJsonFromDB = getCatelogJsonFromDB();
+            // 保证数据库查询完成以后，将数据放在redis中，这是一个原子操作
+            System.out.println("缓存不命中......将要查询数据库");
+            Map<String, List<Catelog2Vo>> catelogJsonFromDB = getCatelogJsonFromDBWithRedisLock();
             // 3. 查到的数据再放入缓存，将对象转为Json放入缓存中
             String s = JSON.toJSONString(catelogJsonFromDB);
-            redisTemplate.opsForValue().set("catelogJson", s);
+            redisTemplate.opsForValue().set("catelogJson", s, 1, TimeUnit.DAYS);
             return catelogJsonFromDB;
         }
-
-        Map<String, List<Catelog2Vo>> result = JSON.parseObject(catelogJson, new TypeReference<Map<String, List<Catelog2Vo>>>() {});
+        System.out.println("缓存命中......直接返回");
+        Map<String, List<Catelog2Vo>> result = JSON.parseObject(catelogJson, new TypeReference<Map<String, List<Catelog2Vo>>>() {
+        });
         return result;
     }
 
     /**
      * 从数据库查询并封装分类数据
+     *
      * @return
      */
-    public Map<String, List<Catelog2Vo>> getCatelogJsonFromDB() {
+    public Map<String, List<Catelog2Vo>> getCatelogJsonFromDBWithRedisLock() {
 
-        /**
-         * 将数据库的多次查询变为一次
-         */
+        // 1. 占分布式锁。去redis占坑
+        String uuid = UUID.randomUUID().toString();
+        Boolean lock = redisTemplate.opsForValue().setIfAbsent("lock", uuid, 300, TimeUnit.SECONDS);
+        if (lock) {
+            System.out.println("获取分布式锁成功......");
+            // 加锁成功... 执行业务
+            // 设置过期时间，必须和加锁是同步的，原子的
+            redisTemplate.expire("lock", 30, TimeUnit.SECONDS);
+
+            // 删除锁，先获取值进行对比 + 对比成功删除 = 原子操作；使用 rua 脚本进行解锁
+            //String lockValue = redisTemplate.opsForValue().get("lock");
+            //if (uuid.equalsIgnoreCase(lockValue)) {
+            //    // 删除我自己的锁
+            //    redisTemplate.delete("lock");
+            //}
+            Map<String, List<Catelog2Vo>> dataFromDb;
+            try {
+                dataFromDb = getDataFromDb();
+            } finally {
+                String script = "if redis.call(\"get\",KEYS[1]) == ARGV[1]\n" +
+                        "then\n" +
+                        "    return redis.call(\"del\",KEYS[1])\n" +
+                        "else\n" +
+                        "    return 0\n" +
+                        "end";
+                // 删除锁
+                Long lock1 = redisTemplate.execute(new DefaultRedisScript<Long>(script, Long.class),
+                        Arrays.asList("lock"), uuid);
+            }
+
+            return dataFromDb;
+        } else {
+            System.out.println("获取分布式锁失败......等待重试");
+            // 加锁失败...重试。与synchronized ()一样，自旋
+            // 休眠100ms重试
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return getCatelogJsonFromDBWithRedisLock();
+        }
+}
+
+    private Map<String, List<Catelog2Vo>> getDataFromDb() {
+        String catelogJson = redisTemplate.opsForValue().get("catelogJson");
+        if (!StringUtils.isEmpty(catelogJson)) {
+            // 缓存不为null直接返回
+            Map<String, List<Catelog2Vo>> result = JSON.parseObject(catelogJson, new TypeReference<Map<String, List<Catelog2Vo>>>() {
+            });
+            return result;
+        }
+        System.out.println("查询了数据库");
+
         List<CategoryEntity> selectList = this.baseMapper.selectList(null);
 
-        // 1. 查出所有 1 级分类
+
         List<CategoryEntity> level1Categories = getParent_cid(selectList, 0L);
 
         // 2. 封装数据
@@ -181,7 +242,28 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
             return catelog2Vos;
         }));
 
+
+        String s = JSON.toJSONString(collect);
+        redisTemplate.opsForValue().set("catelogJson", s, 1, TimeUnit.DAYS);
         return collect;
+    }
+
+    /**
+     * 从数据库查询并封装分类数据
+     *
+     * @return
+     */
+    public Map<String, List<Catelog2Vo>> getCatelogJsonFromDBWithLocalLock() {
+
+        // 只要是同一把锁，就能锁住需要这个锁的所有线程
+        // 1. synchronized (this): SpringBoot 所有的组件在容器中都是单例的。
+        // TODO: 本地锁：synchronized，JUC（lock）锁不住所有的线程。在分布式情况下，想要锁住所有，必须使用分布式锁
+        synchronized (this) {
+            // 得到锁以后，我们应该再去缓存中确认一次，如果没有才需要继续查询
+            return getDataFromDb();
+        }
+
+
     }
 
     private List<CategoryEntity> getParent_cid(List<CategoryEntity> selectList, Long parent_cid) {
