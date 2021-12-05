@@ -7,11 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import java.util.UUID;
 
 /**
  * 1. 引入 oss-starter
@@ -24,6 +24,22 @@ public class GulimallProductApplicationTests {
 
     @Autowired
     BrandService brandService;
+
+    @Autowired
+    StringRedisTemplate stringRedisTemplate;
+
+    @Test
+    public void testStringRedisTemplate() {
+        // hello    world
+        ValueOperations<String, String> ops =
+                stringRedisTemplate.opsForValue();
+        // 保存
+        ops.set("hello", "world_" + UUID.randomUUID().toString());
+
+        // 查询
+        String hello = ops.get("hello");
+        System.out.println("之前保存的数据：" + hello);
+    }
 
     //@Autowired
     //OSSClient ossClient;
@@ -59,5 +75,7 @@ public class GulimallProductApplicationTests {
         System.out.println("保存成功");
 
     }
+
+
 
 }

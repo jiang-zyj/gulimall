@@ -51,6 +51,12 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  *      3. 页面放在templates下，直接访问
  *          SpringBoot，访问项目的时候，默认会找index.html
  *      4. 不重启服务器更新数据 dev-tools; 利用 control + shift + f9 刷新页面
+ *
+ *  6. 整合redis
+ *      1. 引入data-redis-starter
+ *      2. 简单配置redis的host等信息
+ *      3. 使用SpringBoot自动配置的StringRedisTemplate来操作redis
+ *      redis -> map<String, String>
  */
 @EnableFeignClients(basePackages = "com.zyj.gulimall.product.feign")
 @EnableDiscoveryClient
