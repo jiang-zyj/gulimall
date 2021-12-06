@@ -12,6 +12,8 @@ import com.zyj.gulimall.product.entity.CategoryEntity;
 import com.zyj.gulimall.product.service.CategoryBrandRelationService;
 import com.zyj.gulimall.product.service.CategoryService;
 import com.zyj.gulimall.product.vo.Catelog2Vo;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -32,6 +34,9 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+
+    @Autowired
+    private RedissonClient redisson;
 
     @Override
     public PageUtils queryPage(Map<String, Object> params) {
@@ -139,7 +144,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
             // 2. 缓存中没有，查询数据库
             // 保证数据库查询完成以后，将数据放在redis中，这是一个原子操作
             System.out.println("缓存不命中......将要查询数据库");
-            Map<String, List<Catelog2Vo>> catelogJsonFromDB = getCatelogJsonFromDBWithRedisLock();
+            Map<String, List<Catelog2Vo>> catelogJsonFromDB = getCatelogJsonFromDBWithRedissonLock();
             // 3. 查到的数据再放入缓存，将对象转为Json放入缓存中
             String s = JSON.toJSONString(catelogJsonFromDB);
             redisTemplate.opsForValue().set("catelogJson", s, 1, TimeUnit.DAYS);
@@ -150,6 +155,44 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         });
         return result;
     }
+
+    /**
+     * 缓存里面的数据如何和数据库保持一致
+     * 双写模式：数据库写完，写数据库的数据到redis
+     * 失效模式：数据库写完，删除redis中的对应数据
+     * 无论是哪种模式，都会产生缓存不一致问题
+     * 但是一般来说，放入缓存的都是不会经常变的，什么0.几s一次，几秒一次啊，不是很快就变的（如果经常变，那还不如直接读数据库，放啥缓存，就算需要放缓存，那两种方法都会进行加锁，那还不如就锁数据库）
+     * 如果业务可以容忍脏数据（即缓存一致性要求不高），那么可以使用读写锁，一般来说，写的次数是远不及读的次数的，所以加上这个读写锁，对性能影响不是很大
+     * 也可以使用canal订阅binlog（二进制文件）的方式（canal是阿里开发的，模拟数据库的从库，数据库一发生变化，就会通过binlog（二进制文件）被canal读取到，然后canal去更新到redis中，
+     * 但是多了一个中间件，也多了一些配置，这种方法的好处就是配置好后，就不用关心缓存的事情了）
+     * 总结：
+     *  1. 我们能放入缓存的数据本就不应该是实时的，一致性要求超高的，所以缓存数据的时候加上过期时间，
+     *      保证每天拿到的当前的最新数据即可。
+     *  2. 我们不应该过度设计，增加系统的复杂性
+     *  3. 遇到实时性、一致性要求高的数据，就应该查询数据库，即使慢点。
+     *
+     * 最终针对于本系统，得出缓存一致性解决方案：
+     *  1. 缓存的所有数据都有过期时间，数据过期后，下一次查询触发主动更新
+     *  2. 读写数据的时候，加上分布式的读写锁
+     * @return
+     */
+    public Map<String, List<Catelog2Vo>> getCatelogJsonFromDBWithRedissonLock() {
+
+        // 1. 锁的名字。锁的粒度，粒度越细，速度越快。
+        // 锁的粒度：具体缓存的是某个数据，11-号商品： product-11-lock product-12-lock
+        RLock lock = redisson.getLock("catelogJson-lock");
+        lock.lock();
+
+        Map<String, List<Catelog2Vo>> dataFromDb;
+        try {
+            dataFromDb = getDataFromDb();
+        } finally {
+            lock.unlock();
+        }
+
+        return dataFromDb;
+    }
+
 
     /**
      * 从数据库查询并封装分类数据
@@ -200,7 +243,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
             }
             return getCatelogJsonFromDBWithRedisLock();
         }
-}
+    }
 
     private Map<String, List<Catelog2Vo>> getDataFromDb() {
         String catelogJson = redisTemplate.opsForValue().get("catelogJson");
