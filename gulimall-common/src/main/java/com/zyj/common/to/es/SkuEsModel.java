@@ -32,13 +32,15 @@ public class SkuEsModel {
 
     private Long hotScore;
 
-    private Long catelogId;
+    private Long catalogId;
+
+    private Long brandId;
+
+    private String catalogName;
 
     private String brandName;
 
     private String brandImg;
-
-    private String catelogName;
 
     private List<Attrs> attrs;
 

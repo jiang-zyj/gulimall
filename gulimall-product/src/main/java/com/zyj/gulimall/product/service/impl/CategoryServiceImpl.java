@@ -151,7 +151,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
      *      CacheManager(RedisCacheManager) -> Cache(RedisCache) -> Cache(RedisCache)负责缓存的读写
      *
      */
-    @Cacheable(value = {"category", "product"}, key = "#root.method.name", sync = true)
+    @Cacheable(value = {"category"}, key = "#root.method.name", sync = true)
     @Override
     public List<CategoryEntity> getLevel1Categories() {
         System.out.println("getLevel1Categories...");
@@ -161,7 +161,7 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryDao, CategoryEntity
         return entities;
     }
 
-    @Cacheable(value = {"category", "product"}, key = "#root.methodName")
+    @Cacheable(value = {"category"}, key = "#root.methodName")
     @Override
     public Map<String, List<Catelog2Vo>> getCatelogJson() {
         System.out.println("查询了数据库");
