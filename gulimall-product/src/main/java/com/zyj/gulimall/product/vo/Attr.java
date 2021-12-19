@@ -4,6 +4,7 @@
 package com.zyj.gulimall.product.vo;
 
 import lombok.Data;
+import lombok.ToString;
 
 /**
  * Auto-generated: 2021-11-18 21:18:9
@@ -12,6 +13,7 @@ import lombok.Data;
  * @website http://www.bejson.com/java2pojo/
  */
 @Data
+@ToString
 public class Attr {
 
     private Long attrId;

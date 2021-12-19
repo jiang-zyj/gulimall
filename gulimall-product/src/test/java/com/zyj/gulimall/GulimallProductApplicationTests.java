@@ -1,8 +1,11 @@
 package com.zyj.gulimall;
 
 import com.zyj.gulimall.product.GulimallProductApplication;
+import com.zyj.gulimall.product.dao.AttrGroupDao;
 import com.zyj.gulimall.product.entity.BrandEntity;
 import com.zyj.gulimall.product.service.BrandService;
+import com.zyj.gulimall.product.service.SkuSaleAttrValueService;
+import com.zyj.gulimall.product.vo.SkuItemSaleAttrVo;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.redisson.api.RedissonClient;
@@ -12,6 +15,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -83,6 +87,19 @@ public class GulimallProductApplicationTests {
         brandService.save(brandEntity);
         System.out.println("保存成功");
 
+    }
+
+    @Autowired
+    AttrGroupDao attrGroupDao;
+    @Autowired
+    SkuSaleAttrValueService skuSaleAttrValueService;
+    @Test
+    public void test() {
+        //List<SpuItemAttrGroupVo> attrGroupWithAttrsBySpuId =
+        //        attrGroupDao.getAttrGroupWithAttrsBySpuId(1L, 225L);
+        //System.out.println(attrGroupWithAttrsBySpuId);
+        List<SkuItemSaleAttrVo> saleAttrsBySpuId = skuSaleAttrValueService.getSaleAttrsBySpuId(1L);
+        System.out.println(saleAttrsBySpuId);
     }
 
 
