@@ -27,7 +27,7 @@ public class SkuItemVo {
     // 2. sku的图片信息 pms_sku_images
     private List<SkuImagesEntity> images;
 
-    // 3. 获取sku的销售属性组合
+    // 3. 获取spu的销售属性组合
     private List<SkuItemSaleAttrVo> saleAttr;
 
     // 4. 获取spu的介绍
