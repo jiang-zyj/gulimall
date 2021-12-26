@@ -13,7 +13,12 @@ alibaba:
     oss:
       endpoint: oss-cn-shenzhen.aliyuncs.com
       bucket: gulimall-jiang-dr
-
+    sms:
+      host: https://fesms.market.alicloudapi.com
+      path: /sms/
+      skin: 1
+      sign: 1
+      app-code: 2ded359bea4448c3b0934d8761335cef
 server:
   port: 30000
 

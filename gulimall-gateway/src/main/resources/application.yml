@@ -50,8 +50,14 @@ spring:
           predicates:
             - Host=gulimall.com,item.gulimall.com
 
+        # 认证中心
         - id: gulimall_search_route
           uri: lb://gulimall-search
           predicates:
             - Host=search.gulimall.com
+
+        - id: gulimall_search_route
+          uri: lb://gulimall-auth-server
+          predicates:
+            - Host=auth.gulimall.com
 ## 前端项目，必须带有 /api 的请求

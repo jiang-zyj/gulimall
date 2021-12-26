@@ -64,10 +64,11 @@
         </b>
         <ul>
             <li>
-                <a href="/static/search/#" class="li_2">你好，请登录</a>
+                <a th:if="${session.loginUser != null}" class="li_2" style="width: 100px;">[[${session.loginUser.nickname}]]</a>
+                <a th:if="${session.loginUser == null}" href="http://auth.gulimall.com/login.html" class="li_2" style="width: 100px;">你好，请登录</a>
             </li>
-            <li>
-                <a href="/static/search/#">免费注册</a>
+            <li th:if="${session.loginUser == null}">
+                <a href="http://auth.gulimall.com/reg.html">免费注册</a>
             </li>
             <span>|</span>
             <li>
@@ -795,7 +796,7 @@
                             <li th:each="brand:${result.brands}">
                                 <a href="/static/search/#"
                                    th:href="${'javascript:searchProducts(&quot;brandId&quot;,'+ brand.brandId +')'}">
-                                    <img th:src="${brand.brandImg}" alt="">
+                                    <img style="width: 150px; height: 50px" th:src="${brand.brandImg}" alt="">
                                     <div th:text="${brand.brandName}">
                                         华为(HUAWEI)
                                     </div>
