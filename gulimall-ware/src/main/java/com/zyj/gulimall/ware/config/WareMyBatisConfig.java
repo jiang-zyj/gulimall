@@ -1,4 +1,4 @@
-package com.zyj.gulimall.config;
+package com.zyj.gulimall.ware.config;
 
 import com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.pagination.optimize.JsqlParserCountOptimize;

@@ -88,7 +88,9 @@ public class OrderItemServiceImpl extends ServiceImpl<OrderItemDao, OrderItemEnt
     }
 
     @RabbitHandler
-    public void receiveMessage2(OrderEntity content) throws InterruptedException {
+    public void receiveMessage2(Message message, OrderEntity content, Channel channel) throws InterruptedException, IOException {
+        long deliveryTag = message.getMessageProperties().getDeliveryTag();
+        channel.basicNack(deliveryTag, false, false);
         System.out.println("接收到消息内容：" + content);
     }
 }

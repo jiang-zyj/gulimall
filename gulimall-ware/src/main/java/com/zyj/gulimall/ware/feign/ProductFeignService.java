@@ -1,4 +1,4 @@
-package com.zyj.gulimall.feign;
+package com.zyj.gulimall.ware.feign;
 
 import com.zyj.common.utils.R;
 import org.springframework.cloud.openfeign.FeignClient;
