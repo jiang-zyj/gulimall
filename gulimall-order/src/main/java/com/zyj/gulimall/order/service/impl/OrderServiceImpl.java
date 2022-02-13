@@ -15,6 +15,7 @@ import com.zyj.gulimall.order.constant.OrderConstant;
 import com.zyj.gulimall.order.dao.OrderDao;
 import com.zyj.gulimall.order.entity.OrderEntity;
 import com.zyj.gulimall.order.entity.OrderItemEntity;
+import com.zyj.gulimall.order.entity.PaymentInfoEntity;
 import com.zyj.gulimall.order.enume.OrderStatusEnum;
 import com.zyj.gulimall.order.feign.CartFeignService;
 import com.zyj.gulimall.order.feign.MemberFeignService;
@@ -23,6 +24,7 @@ import com.zyj.gulimall.order.feign.WmsFeignService;
 import com.zyj.gulimall.order.interceptor.LoginUserInterceptor;
 import com.zyj.gulimall.order.service.OrderItemService;
 import com.zyj.gulimall.order.service.OrderService;
+import com.zyj.gulimall.order.service.PaymentInfoService;
 import com.zyj.gulimall.order.to.OrderCreateTo;
 import com.zyj.gulimall.order.vo.*;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -57,6 +59,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
 
     @Autowired
     private OrderItemService orderItemService;
+
+    @Autowired
+    private PaymentInfoService paymentInfoService;
 
     @Autowired
     private MemberFeignService memberFeignService;
@@ -290,6 +295,68 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
                 // TODO: 将没发送成功的消息进行重试发送。
             }
         }
+    }
+
+    @Override
+    public PayVo getOrderPay(String orderSn) {
+        PayVo payVo = new PayVo();
+        OrderEntity order = this.getOrderByOrderSn(orderSn);
+
+        BigDecimal payAmount = order.getPayAmount().setScale(2, BigDecimal.ROUND_UP);
+        payVo.setTotal_amount(payAmount.toString());
+        payVo.setOut_trade_no(order.getOrderSn());
+
+        List<OrderItemEntity> list = orderItemService.list(new QueryWrapper<OrderItemEntity>().eq("order_sn", orderSn));
+        OrderItemEntity entity = list.get(0);
+        payVo.setSubject(entity.getSkuName());
+        payVo.setBody(entity.getSkuAttrsVals());
+        return payVo;
+    }
+
+    @Override
+    public PageUtils queryPageWithItem(Map<String, Object> params) {
+
+        MemberRespVo memberRespVo = LoginUserInterceptor.loginUser.get();
+
+        IPage<OrderEntity> page = this.page(
+                new Query<OrderEntity>().getPage(params),
+                new QueryWrapper<OrderEntity>().eq("member_id", memberRespVo.getId()).orderByDesc("id")
+        );
+
+        List<OrderEntity> collect = page.getRecords().stream().map(order -> {
+            List<OrderItemEntity> itemEntities = orderItemService.list(new QueryWrapper<OrderItemEntity>().eq("order_sn", order.getOrderSn()));
+            order.setItemEntities(itemEntities);
+            return order;
+        }).collect(Collectors.toList());
+
+        page.setRecords(collect);
+
+        return new PageUtils(page);
+    }
+
+    /**
+     * 处理支付宝的支付结果
+     * @param vo
+     * @return
+     */
+    @Override
+    public String handlePayResult(PayAsyncVo vo) {
+        //1、保存交易流水
+        PaymentInfoEntity infoEntity = new PaymentInfoEntity();
+        infoEntity.setAlipayTradeNo(vo.getTrade_no());
+        infoEntity.setOrderSn(vo.getOut_trade_no());
+        infoEntity.setPaymentStatus(vo.getTrade_status());
+        infoEntity.setCallbackTime(vo.getNotify_time());
+
+        paymentInfoService.save(infoEntity);
+
+        // 2、修改订单的状态信息
+        if (vo.getTrade_status().equals("TRADE_SUCCESS") || vo.getTrade_status().equals("TRADE_FINISHED")) {
+            // 支付成功状态
+            String outTradeNo = vo.getOut_trade_no();
+            this.baseMapper.updateOrderStatus(outTradeNo, OrderStatusEnum.PAYED.getCode());
+        }
+        return "success";
     }
 
     /**

@@ -22,4 +22,8 @@ mybatis-plus:
       id-type: auto
 
 
+#logging:
+#  level:
+#    com.zyj.gulimall.coupon: debug
+
 

@@ -33,6 +33,7 @@ public class OrderCloseListener {
             // 判断当前消息是否是第二次及以后（重新）派发过来的
             //Boolean redelivered = message.getMessageProperties().getRedelivered();
             orderService.closeOrder(orderEntity);
+            // 手动调用支付宝API进行收单
             channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
         } catch (Exception e) {
             channel.basicReject(message.getMessageProperties().getDeliveryTag(), true);

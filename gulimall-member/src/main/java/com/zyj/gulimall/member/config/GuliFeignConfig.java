@@ -1,4 +1,4 @@
-package com.zyj.gulimall.order.config;
+package com.zyj.gulimall.member.config;
 
 import feign.RequestInterceptor;
 import feign.RequestTemplate;

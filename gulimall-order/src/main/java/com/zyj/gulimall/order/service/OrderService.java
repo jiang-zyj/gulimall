@@ -3,9 +3,7 @@ package com.zyj.gulimall.order.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.zyj.common.utils.PageUtils;
 import com.zyj.gulimall.order.entity.OrderEntity;
-import com.zyj.gulimall.order.vo.OrderConfirmVo;
-import com.zyj.gulimall.order.vo.OrderSubmitVo;
-import com.zyj.gulimall.order.vo.SubmitOrderResponseVo;
+import com.zyj.gulimall.order.vo.*;
 
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -38,5 +36,15 @@ public interface OrderService extends IService<OrderEntity> {
 
     void closeOrder(OrderEntity orderEntity);
 
+    /**
+     * 获取当前订单的支付信息
+     * @param orderSn
+     * @return
+     */
+    PayVo getOrderPay(String orderSn);
+
+    PageUtils queryPageWithItem(Map<String, Object> params);
+
+    String handlePayResult(PayAsyncVo vo);
 }
 
