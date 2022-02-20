@@ -21,7 +21,7 @@ public class SeckillSkuRelationServiceImpl extends ServiceImpl<SeckillSkuRelatio
     public PageUtils queryPage(Map<String, Object> params) {
 
         QueryWrapper<SeckillSkuRelationEntity> queryWrapper = new QueryWrapper<SeckillSkuRelationEntity>();
-
+        // 场次id不为null
         String promotionSessionId = (String) params.get("promotionSessionId");
         if (!StringUtils.isEmpty(promotionSessionId)) {
             queryWrapper.eq("promotion_session_id", promotionSessionId);

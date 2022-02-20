@@ -3,6 +3,7 @@ package com.zyj.gulimall.product.vo;
 import com.zyj.gulimall.product.entity.SkuImagesEntity;
 import com.zyj.gulimall.product.entity.SkuInfoEntity;
 import com.zyj.gulimall.product.entity.SpuInfoDescEntity;
+import com.zyj.gulimall.product.web.SecKillInfoVo;
 import lombok.Data;
 
 import java.util.List;
@@ -35,5 +36,8 @@ public class SkuItemVo {
 
     // 5. 获取spu的规格参数（属性）
     List<SpuItemAttrGroupVo> groupAttrs;
+
+    // 6. 当前秒杀商品优惠信息
+    SecKillInfoVo secKillInfo;
 
 }

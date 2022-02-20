@@ -1,18 +1,22 @@
 package com.zyj.gulimall.product.service.impl;
 
+import com.alibaba.fastjson.TypeReference;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zyj.common.utils.PageUtils;
 import com.zyj.common.utils.Query;
+import com.zyj.common.utils.R;
 import com.zyj.gulimall.product.dao.SkuInfoDao;
 import com.zyj.gulimall.product.entity.SkuImagesEntity;
 import com.zyj.gulimall.product.entity.SkuInfoEntity;
 import com.zyj.gulimall.product.entity.SpuInfoDescEntity;
+import com.zyj.gulimall.product.feign.SecKillFeignService;
 import com.zyj.gulimall.product.service.*;
 import com.zyj.gulimall.product.vo.SkuItemSaleAttrVo;
 import com.zyj.gulimall.product.vo.SkuItemVo;
 import com.zyj.gulimall.product.vo.SpuItemAttrGroupVo;
+import com.zyj.gulimall.product.web.SecKillInfoVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -36,6 +40,9 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> i
 
     @Autowired
     private AttrGroupService attrGroupService;
+
+    @Autowired
+    private SecKillFeignService secKillFeignService;
 
     @Autowired
     private SkuSaleAttrValueService skuSaleAttrValueService;
@@ -163,8 +170,19 @@ public class SkuInfoServiceImpl extends ServiceImpl<SkuInfoDao, SkuInfoEntity> i
             skuItemVo.setImages(images);
         }, executor);
 
+        // 3. 查询当前sku是否参与秒杀优惠
+        CompletableFuture<Void> secKillFuture = CompletableFuture.runAsync(() -> {
+            R secKillInfo = secKillFeignService.getSkuSecKillInfo(skuId);
+            if (secKillInfo.getCode() == 0) {
+                SecKillInfoVo skuInfoVo = secKillInfo.getData(new TypeReference<SecKillInfoVo>() {
+                });
+                skuItemVo.setSecKillInfo(skuInfoVo);
+            }
+        }, executor);
+
+
         // 等所有任务都完成
-        CompletableFuture.allOf(saleAttrFuture, descFuture, baseAttrFuture, imagesFuture).get();
+        CompletableFuture.allOf(saleAttrFuture, descFuture, baseAttrFuture, imagesFuture, secKillFuture).get();
 
         return skuItemVo;
     }

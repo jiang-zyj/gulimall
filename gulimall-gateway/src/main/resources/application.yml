@@ -86,4 +86,10 @@ spring:
           uri: lb://gulimall-member
           predicates:
             - Host=member.gulimall.com
+
+        # 会员服务
+        - id: gulimall_seckill_route
+          uri: lb://gulimall-seckill
+          predicates:
+            - Host=seckill.gulimall.com
 ## 前端项目，必须带有 /api 的请求
