@@ -35,15 +35,16 @@ public class SecKillSkuRedisTo {
     /**
      * 秒杀总量
      */
-    private BigDecimal seckillCount;
+    private Integer seckillCount;
     /**
      * 每人限购数量
      */
-    private BigDecimal seckillLimit;
+    private Integer seckillLimit;
     /**
      * 排序
      */
     private Integer seckillSort;
+
 
     /**
      * 当前商品秒杀的开始时间

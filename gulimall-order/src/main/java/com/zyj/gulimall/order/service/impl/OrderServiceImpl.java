@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zyj.common.exception.NoStockException;
 import com.zyj.common.to.mq.OrderTo;
+import com.zyj.common.to.mq.SecKillOrderTo;
 import com.zyj.common.utils.PageUtils;
 import com.zyj.common.utils.Query;
 import com.zyj.common.utils.R;
@@ -357,6 +358,28 @@ public class OrderServiceImpl extends ServiceImpl<OrderDao, OrderEntity> impleme
             this.baseMapper.updateOrderStatus(outTradeNo, OrderStatusEnum.PAYED.getCode());
         }
         return "success";
+    }
+
+    @Override
+    public void createSecKillOrder(SecKillOrderTo secKillOrder) {
+        // TODO: 保存订单信息
+        OrderEntity orderEntity = new OrderEntity();
+        orderEntity.setOrderSn(secKillOrder.getOrderSn());
+        orderEntity.setMemberId(secKillOrder.getMemberId());
+
+        orderEntity.setStatus(OrderStatusEnum.CREATE_NEW.getCode());
+
+        BigDecimal multiply = secKillOrder.getSeckillPrice().multiply(new BigDecimal("" + secKillOrder.getNum()));
+        orderEntity.setPayAmount(multiply);
+        this.save(orderEntity);
+
+        // TODO: 保存订单项
+        OrderItemEntity itemEntity = new OrderItemEntity();
+        itemEntity.setOrderSn(secKillOrder.getOrderSn());
+        itemEntity.setRealAmount(multiply);
+        // TODO: 获取当前SKU的详细信息进行设置  productFeignService.getSpuInfoBySkuId()
+        itemEntity.setSkuQuantity(secKillOrder.getNum());
+        orderItemService.save(itemEntity);
     }
 
     /**
