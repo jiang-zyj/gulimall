@@ -3,6 +3,7 @@ package com.zyj.gulimall.seckill.controller;
 import com.zyj.common.utils.R;
 import com.zyj.gulimall.seckill.service.SecKillService;
 import com.zyj.gulimall.seckill.to.SecKillSkuRedisTo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,6 +22,7 @@ import java.util.List;
  * @Package: com.zyj.gulimall.seckill.controller
  * @Description:
  */
+@Slf4j
 @Controller
 public class SecKillController {
 
@@ -34,6 +36,7 @@ public class SecKillController {
     @ResponseBody
     @GetMapping("/currentSecKillSkus")
     public R getCurrentSecKillSkus() {
+        log.info("currentSecKillSkus正在执行...");
         List<SecKillSkuRedisTo> vos = secKillService.getCurrentSecKillSkus();
         return R.ok().setData(vos);
     }
