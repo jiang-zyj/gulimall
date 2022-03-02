@@ -248,57 +248,61 @@ public class SecKillServiceImpl implements SecKillService {
     }
 
     private void saveSessionInfos(List<SecKillSessionWithSkus> sessionData) {
-        sessionData.stream().forEach(session -> {
-            Long startTime = session.getStartTime().getTime();
-            Long endTime = session.getEndTime().getTime();
-            String key = SESSIONS_CACHE_PREFIX + startTime + "_" + endTime;
-            Boolean hasKey = redisTemplate.hasKey(key);
-            if (!hasKey) {
-                List<String> collect = session.getRelationSkus().stream().map(item -> item.getPromotionSessionId() + "_" + item.getSkuId().toString()).collect(Collectors.toList());
-                // 缓存活动信息
-                redisTemplate.opsForList().leftPushAll(key, collect);
-            }
-        });
+        if (sessionData != null) {
+            sessionData.stream().forEach(session -> {
+                Long startTime = session.getStartTime().getTime();
+                Long endTime = session.getEndTime().getTime();
+                String key = SESSIONS_CACHE_PREFIX + startTime + "_" + endTime;
+                Boolean hasKey = redisTemplate.hasKey(key);
+                if (!hasKey) {
+                    List<String> collect = session.getRelationSkus().stream().map(item -> item.getPromotionSessionId() + "_" + item.getSkuId().toString()).collect(Collectors.toList());
+                    // 缓存活动信息
+                    redisTemplate.opsForList().leftPushAll(key, collect);
+                }
+            });
+        }
     }
 
     private void saveSessionSkuInfos(List<SecKillSessionWithSkus> sessionData) {
-        sessionData.stream().forEach(session -> {
-            // 准备Hash操作
-            BoundHashOperations<String, Object, Object> hashOps = redisTemplate.boundHashOps(SKUKILL_CACHE_PREFIX);
-            session.getRelationSkus().stream().forEach(secKillSkuVo -> {
-                // 如果redis中没有该key，则进行添加，否则无需操作
-                if (!hashOps.hasKey(secKillSkuVo.getPromotionSessionId().toString() + "_" + secKillSkuVo.getSkuId().toString())) {
-                    // 缓存商品
-                    SecKillSkuRedisTo redisTo = new SecKillSkuRedisTo();
-                    // 1. sku的基本信息
-                    R skuInfo = productFeignService.getSkuInfo(secKillSkuVo.getSkuId());
-                    if (skuInfo.getCode() == 0) {
-                        SkuInfoVo info = skuInfo.getData("skuInfo", new TypeReference<SkuInfoVo>() {
-                        });
-                        redisTo.setSkuInfo(info);
+        if (sessionData != null) {
+            sessionData.stream().forEach(session -> {
+                // 准备Hash操作
+                BoundHashOperations<String, Object, Object> hashOps = redisTemplate.boundHashOps(SKUKILL_CACHE_PREFIX);
+                session.getRelationSkus().stream().forEach(secKillSkuVo -> {
+                    // 如果redis中没有该key，则进行添加，否则无需操作
+                    if (!hashOps.hasKey(secKillSkuVo.getPromotionSessionId().toString() + "_" + secKillSkuVo.getSkuId().toString())) {
+                        // 缓存商品
+                        SecKillSkuRedisTo redisTo = new SecKillSkuRedisTo();
+                        // 1. sku的基本信息
+                        R skuInfo = productFeignService.getSkuInfo(secKillSkuVo.getSkuId());
+                        if (skuInfo.getCode() == 0) {
+                            SkuInfoVo info = skuInfo.getData("skuInfo", new TypeReference<SkuInfoVo>() {
+                            });
+                            redisTo.setSkuInfo(info);
+                        }
+                        // 2. sku的秒杀信息
+                        BeanUtils.copyProperties(secKillSkuVo, redisTo);
+
+                        // 3. 设置当前商品的秒杀时间信息
+                        redisTo.setStartTime(session.getStartTime().getTime());
+                        redisTo.setEndTime(session.getEndTime().getTime());
+
+                        // 4. 商品的随机码？ seckill?skuId=1&key=saefsad
+                        String token = UUID.randomUUID().toString().replace("-", "");
+                        redisTo.setRandomCode(token);
+
+                        // 如果当前这个场次的商品的库存信息已经上架就不需要上架了
+                        // 5. 使用库存作为分布式的信号量     限流；
+                        RSemaphore semaphore = redissonClient.getSemaphore(SKU_STOCK_SEMAPHORE + token);
+                        // 商品可以秒杀的数量作为信号量
+                        semaphore.trySetPermits(secKillSkuVo.getSeckillCount());
+
+                        String jsonString = JSON.toJSONString(redisTo);
+                        hashOps.put(secKillSkuVo.getPromotionSessionId().toString() + "_" + secKillSkuVo.getSkuId().toString(), jsonString);
                     }
-                    // 2. sku的秒杀信息
-                    BeanUtils.copyProperties(secKillSkuVo, redisTo);
-
-                    // 3. 设置当前商品的秒杀时间信息
-                    redisTo.setStartTime(session.getStartTime().getTime());
-                    redisTo.setEndTime(session.getEndTime().getTime());
-
-                    // 4. 商品的随机码？ seckill?skuId=1&key=saefsad
-                    String token = UUID.randomUUID().toString().replace("-", "");
-                    redisTo.setRandomCode(token);
-
-                    // 如果当前这个场次的商品的库存信息已经上架就不需要上架了
-                    // 5. 使用库存作为分布式的信号量     限流；
-                    RSemaphore semaphore = redissonClient.getSemaphore(SKU_STOCK_SEMAPHORE + token);
-                    // 商品可以秒杀的数量作为信号量
-                    semaphore.trySetPermits(secKillSkuVo.getSeckillCount());
-
-                    String jsonString = JSON.toJSONString(redisTo);
-                    hashOps.put(secKillSkuVo.getPromotionSessionId().toString() + "_" + secKillSkuVo.getSkuId().toString(), jsonString);
-                }
+                });
             });
-        });
+        }
     }
 
 }
