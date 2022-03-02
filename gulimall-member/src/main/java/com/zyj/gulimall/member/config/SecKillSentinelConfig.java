@@ -1,4 +1,4 @@
-package com.zyj.gulimall.seckill.config;
+package com.zyj.gulimall.member.config;
 
 import com.alibaba.csp.sentinel.adapter.spring.webmvc.callback.BlockExceptionHandler;
 import com.alibaba.csp.sentinel.slots.block.BlockException;

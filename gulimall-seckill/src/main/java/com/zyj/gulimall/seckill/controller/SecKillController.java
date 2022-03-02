@@ -44,6 +44,12 @@ public class SecKillController {
     @ResponseBody
     @GetMapping("/sku/seckill/{skuId}")
     public R getSkuSecKillInfo(@PathVariable("skuId") Long skuId) {
+        //try {
+        //    // 测试Sentinel的降级策略
+        //    Thread.sleep(300);
+        //} catch (InterruptedException e) {
+        //    e.printStackTrace();
+        //}
         SecKillSkuRedisTo to = secKillService.getSkuSecKillInfo(skuId);
         return R.ok().setData(to);
     }

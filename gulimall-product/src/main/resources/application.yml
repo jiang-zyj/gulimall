@@ -37,4 +37,4 @@ server:
 
 logging:
   level:
-    com.zyj.gulimall: error
+    com.zyj.gulimall: info

@@ -1,5 +1,9 @@
 package com.zyj.gulimall.seckill.service.impl;
 
+import com.alibaba.csp.sentinel.Entry;
+import com.alibaba.csp.sentinel.SphU;
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.TypeReference;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
@@ -81,39 +85,55 @@ public class SecKillServiceImpl implements SecKillService {
         }
     }
 
+    public List<SecKillSkuRedisTo> blockHandlerMethod(BlockException e) {
+        log.error("getCurrentSecKillSkusResource资源被限流了...");
+        return null;
+    }
+
     /**
      * 返回当前时间可以参与的秒杀商品信息
-     *
+     * blockHandler 函数会在原方法被限流/降级/系统保护的时候调用。
+     * fallback 函数会针对所有类型的异常。
+     * fallbackClass 为对应的异常类的 Class 对象，注意对应的函数必需为 static 函数，否则无法解析。
+     * FIXME: 注：使用fallbackClass + fallback，blockHandlerClass + blockHandler测试均失败，只有单独的blockHandler是测试成功的
      * @return
      */
+    @SentinelResource(value = "getCurrentSecKillSkusResource", blockHandler = "resourceFallbackMethod")
     @Override
     public List<SecKillSkuRedisTo> getCurrentSecKillSkus() {
+        // 测试Sentinel的fallback（针对所有异常，这里试一下数字异常，测试不通过）
+        //int i = 10 / 0;
         // 1. 确定当前时间属于哪个秒杀场次
         long time = new Date().getTime();
-        // 获取redis中所有key
-        Set<String> keys = redisTemplate.keys(SESSIONS_CACHE_PREFIX + "*");
-        for (String key : keys) {
-            // seckill:session:1645401600000_1645408800000
-            String replace = key.replace(SESSIONS_CACHE_PREFIX, "");
-            String[] split = replace.split("_");
-            long start = Long.parseLong(split[0]);
-            long end = Long.parseLong(split[1]);
-            if (time >= start && time <= end) {
-                // 2. 获取这个秒杀场次需要的所有商品信息
-                List<String> range = redisTemplate.opsForList().range(key, -100, 100);
-                BoundHashOperations<String, String, String> hashOps =
-                        redisTemplate.boundHashOps(SKUKILL_CACHE_PREFIX);
-                List<String> list = hashOps.multiGet(range);
-                if (list != null) {
-                    List<SecKillSkuRedisTo> collect = list.stream().map(item -> {
-                        SecKillSkuRedisTo redis = JSON.parseObject(item, SecKillSkuRedisTo.class);
-                        //redis.setRandomCode();    // 当前秒杀已经开始了，随机码可以放出来
-                        return redis;
-                    }).collect(Collectors.toList());
-                    return collect;
+        // 使用Sentinel自定义资源：代码定义资源
+        try (Entry entry = SphU.entry("secKillSkus")) {
+            // 获取redis中所有key
+            Set<String> keys = redisTemplate.keys(SESSIONS_CACHE_PREFIX + "*");
+            for (String key : keys) {
+                // seckill:session:1645401600000_1645408800000
+                String replace = key.replace(SESSIONS_CACHE_PREFIX, "");
+                String[] split = replace.split("_");
+                long start = Long.parseLong(split[0]);
+                long end = Long.parseLong(split[1]);
+                if (time >= start && time <= end) {
+                    // 2. 获取这个秒杀场次需要的所有商品信息
+                    List<String> range = redisTemplate.opsForList().range(key, -100, 100);
+                    BoundHashOperations<String, String, String> hashOps =
+                            redisTemplate.boundHashOps(SKUKILL_CACHE_PREFIX);
+                    List<String> list = hashOps.multiGet(range);
+                    if (list != null) {
+                        List<SecKillSkuRedisTo> collect = list.stream().map(item -> {
+                            SecKillSkuRedisTo redis = JSON.parseObject(item, SecKillSkuRedisTo.class);
+                            //redis.setRandomCode();    // 当前秒杀已经开始了，随机码可以放出来
+                            return redis;
+                        }).collect(Collectors.toList());
+                        return collect;
+                    }
+                    break;
                 }
-                break;
             }
+        } catch (BlockException e) {
+            log.error("资源被限流,{}", e.getMessage());
         }
         return null;
     }
@@ -148,6 +168,7 @@ public class SecKillServiceImpl implements SecKillService {
     /**
      * TODO: 上架秒杀商品的时候，每一个数据都有过期时间
      * TODO: 秒杀后续的流程，简化了收货地址等信息
+     *
      * @param killId
      * @param key
      * @param num

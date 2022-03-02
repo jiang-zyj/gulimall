@@ -1,6 +1,7 @@
 package com.zyj.gulimall.product.feign;
 
 import com.zyj.common.utils.R;
+import com.zyj.gulimall.product.feign.fallback.SecKillFeignServiceFallBack;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
  * @Package: com.zyj.gulimall.product.feign
  * @Description:
  */
-@FeignClient("gulimall-seckill")
+@FeignClient(value = "gulimall-seckill", fallback = SecKillFeignServiceFallBack.class)
 public interface SecKillFeignService {
 
     @GetMapping("/sku/seckill/{skuId}")
