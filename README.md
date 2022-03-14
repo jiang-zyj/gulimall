@@ -1,4 +1,5 @@
-# gulimall
+# Gulimall
+## Author
 [![GitHub license](https://img.shields.io/badge/github-jiang--zyj-yellow)](https://github.com/jiang-zyj)
 [![GitHub license](https://img.shields.io/badge/CSDN-%E7%BB%88%E5%8D%97%E5%B1%B1-blue)](https://blog.csdn.net/qq_45063782?spm=1000.2115.3001.5343)
 <!--
@@ -8,4 +9,5 @@
 [![GitHub stars](https://img.shields.io/github/stars/jiang-zyj/gulimall.git)](https://github.com/jiang-zyj/gulimall.git/stargazers)
 -->
 
-
+## Stats
+![Alt](https://repobeats.axiom.co/api/embed/fe039d62dea8700b410e6aea42724457f8982f82.svg "Repobeats analytics image")
