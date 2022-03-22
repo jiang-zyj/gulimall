@@ -9,8 +9,8 @@ spring:
       discovery:
         server-addr: 127.0.0.1:8848
       config:
-        access-key: LTAI5tG98eYi47ft4Ao8hqZp
-        secret-key: nbtDhE2fRiORNvzz8QdRhmMbl699Nf
+        access-key: **
+        secret-key: **
         oss:
           endpoint: oss-cn-shenzhen.aliyuncs.com
   # 使关于时间的json数据都转换为标准格式
