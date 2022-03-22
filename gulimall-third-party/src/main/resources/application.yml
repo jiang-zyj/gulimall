@@ -8,8 +8,8 @@ spring:
 
 alibaba:
   cloud:
-    access-key: LTAI5tG98eYi47ft4Ao8hqZp
-    secret-key: nbtDhE2fRiORNvzz8QdRhmMbl699Nf
+    access-key: ***
+    secret-key: ***
     oss:
       endpoint: oss-cn-shenzhen.aliyuncs.com
       bucket: gulimall-jiang-dr
@@ -18,7 +18,7 @@ alibaba:
       path: /sms/
       skin: 1
       sign: 1
-      app-code: 2ded359bea4448c3b0934d8761335cef
+      app-code: ***
 server:
   port: 30000
 
